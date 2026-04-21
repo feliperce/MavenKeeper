@@ -7,8 +7,5 @@ sealed interface Destination {
     data object Library : Destination
 
     @Serializable
-    data class Detail(val groupId: String, val artifactId: String) : Destination
-
-    @Serializable
     data object Settings : Destination
 }

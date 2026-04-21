@@ -4,13 +4,13 @@ import io.github.feliperce.mavenkeeper.data.local.M2PathProvider
 import io.github.feliperce.mavenkeeper.data.local.M2RepositoryScanner
 import io.github.feliperce.mavenkeeper.domain.model.Artifact
 import io.github.feliperce.mavenkeeper.domain.model.ArtifactGroup
+import io.github.feliperce.mavenkeeper.domain.model.GroupSummary
 import io.github.feliperce.mavenkeeper.domain.model.ScanProgress
 import io.github.feliperce.mavenkeeper.domain.repository.ArtifactRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -26,11 +26,13 @@ class LocalArtifactRepositoryImpl(
 ) : ArtifactRepository {
 
     private val _groups = MutableStateFlow<List<ArtifactGroup>>(emptyList())
+    private val _groupSummaries = MutableStateFlow<List<GroupSummary>>(emptyList())
     private val _progress = MutableStateFlow<ScanProgress>(ScanProgress.Idle)
     private val _root = MutableStateFlow(pathProvider.resolve())
     private val scanMutex = Mutex()
 
     override val groups: StateFlow<List<ArtifactGroup>> = _groups.asStateFlow()
+    override val groupSummaries: StateFlow<List<GroupSummary>> = _groupSummaries.asStateFlow()
     override val progress: StateFlow<ScanProgress> = _progress.asStateFlow()
     override val repositoryRoot: StateFlow<Path?> = _root.asStateFlow()
 
@@ -39,7 +41,8 @@ class LocalArtifactRepositoryImpl(
             val root = pathProvider.resolve()
             _root.value = root
             scanner.scan(root).collect { result ->
-                _groups.value = aggregate(result.artifacts)
+                _groups.value = aggregateGroups(result.artifacts)
+                _groupSummaries.value = summarizeByGroupId(result.artifacts)
                 _progress.value = result.progress
             }
         }
@@ -52,30 +55,47 @@ class LocalArtifactRepositoryImpl(
 
     override suspend fun delete(artifact: Artifact): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val dir = artifact.versionDirectory
-            if (!Files.exists(dir)) return@runCatching
-            Files.walkFileTree(dir, object : SimpleFileVisitor<Path>() {
-                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-                    Files.delete(file)
-                    return FileVisitResult.CONTINUE
-                }
-
-                override fun postVisitDirectory(dir: Path, exc: java.io.IOException?): FileVisitResult {
-                    Files.delete(dir)
-                    return FileVisitResult.CONTINUE
-                }
-            })
-            _groups.value = _groups.value
-                .map { group ->
-                    if (group.groupId == artifact.coordinate.groupId && group.artifactId == artifact.coordinate.artifactId) {
-                        group.copy(versions = group.versions.filterNot { it.versionDirectory == artifact.versionDirectory })
-                    } else group
-                }
-                .filter { it.versions.isNotEmpty() }
+            deleteVersionDir(artifact.versionDirectory)
+            updateInMemoryAfterDelete(listOf(artifact))
         }
     }
 
-    private fun aggregate(artifacts: List<Artifact>): List<ArtifactGroup> =
+    override suspend fun purgeSnapshots(): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            val snapshots = _groups.value.flatMap { it.versions }.filter { it.isSnapshot }
+            snapshots.forEach { runCatching { deleteVersionDir(it.versionDirectory) } }
+            updateInMemoryAfterDelete(snapshots)
+            snapshots.size
+        }
+    }
+
+    private fun deleteVersionDir(dir: Path) {
+        if (!Files.exists(dir)) return
+        Files.walkFileTree(dir, object : SimpleFileVisitor<Path>() {
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                Files.delete(file)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun postVisitDirectory(dir: Path, exc: java.io.IOException?): FileVisitResult {
+                Files.delete(dir)
+                return FileVisitResult.CONTINUE
+            }
+        })
+    }
+
+    private fun updateInMemoryAfterDelete(removed: List<Artifact>) {
+        val removedDirs = removed.map { it.versionDirectory }.toSet()
+        val updatedGroups = _groups.value
+            .map { group ->
+                group.copy(versions = group.versions.filterNot { it.versionDirectory in removedDirs })
+            }
+            .filter { it.versions.isNotEmpty() }
+        _groups.value = updatedGroups
+        _groupSummaries.value = summarizeByGroupId(updatedGroups.flatMap { it.versions })
+    }
+
+    private fun aggregateGroups(artifacts: List<Artifact>): List<ArtifactGroup> =
         artifacts
             .groupBy { it.coordinate.groupId to it.coordinate.artifactId }
             .map { (key, versions) ->
@@ -87,4 +107,18 @@ class LocalArtifactRepositoryImpl(
                 )
             }
             .sortedBy { it.groupArtifact.lowercase() }
+
+    private fun summarizeByGroupId(artifacts: List<Artifact>): List<GroupSummary> =
+        artifacts
+            .groupBy { it.coordinate.groupId }
+            .map { (groupId, versions) ->
+                val artifactCount = versions.map { it.coordinate.artifactId }.distinct().size
+                GroupSummary(
+                    groupId = groupId,
+                    artifactCount = artifactCount,
+                    versionCount = versions.size,
+                    totalSize = versions.sumOf { it.sizeBytes },
+                )
+            }
+            .sortedByDescending { it.totalSize }
 }

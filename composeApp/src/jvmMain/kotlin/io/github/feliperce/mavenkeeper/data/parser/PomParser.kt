@@ -46,6 +46,13 @@ class PomParser {
             ?.toList()
             .orEmpty()
 
+        val licenses = project.childElement("licenses")
+            ?.childElements()
+            ?.filter { it.tagName == "license" }
+            ?.mapNotNull { it.childText("name")?.resolve(properties) }
+            ?.toList()
+            .orEmpty()
+
         ParsedPom(
             coordinate = MavenCoordinate(
                 groupId = groupId.resolve(properties),
@@ -53,6 +60,7 @@ class PomParser {
                 version = version.resolve(properties),
             ),
             packaging = packaging.resolve(properties),
+            licenses = licenses,
             dependencies = deps,
         )
     }.getOrNull()
@@ -94,5 +102,6 @@ class PomParser {
 data class ParsedPom(
     val coordinate: MavenCoordinate,
     val packaging: String,
+    val licenses: List<String>,
     val dependencies: List<PomDependency>,
 )

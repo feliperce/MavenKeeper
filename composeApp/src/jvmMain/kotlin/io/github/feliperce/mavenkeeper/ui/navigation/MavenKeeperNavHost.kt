@@ -6,9 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import io.github.feliperce.mavenkeeper.di.AppContainer
-import io.github.feliperce.mavenkeeper.ui.screens.detail.ArtifactDetailScreen
 import io.github.feliperce.mavenkeeper.ui.screens.library.LibraryScreen
 import io.github.feliperce.mavenkeeper.ui.screens.settings.SettingsScreen
 
@@ -25,20 +23,7 @@ fun MavenKeeperNavHost(
     ) {
         composable<Destination.Library> {
             val vm = viewModel { container.libraryViewModel() }
-            LibraryScreen(
-                viewModel = vm,
-                onArtifactClick = { groupId, artifactId ->
-                    navController.navigate(Destination.Detail(groupId, artifactId))
-                },
-            )
-        }
-        composable<Destination.Detail> { entry ->
-            val route = entry.toRoute<Destination.Detail>()
-            val vm = viewModel { container.detailViewModel(route.groupId, route.artifactId) }
-            ArtifactDetailScreen(
-                viewModel = vm,
-                onBack = { navController.popBackStack() },
-            )
+            LibraryScreen(viewModel = vm)
         }
         composable<Destination.Settings> {
             val vm = viewModel { container.settingsViewModel() }

@@ -56,8 +56,7 @@ private fun AppNavigationRail(navController: NavHostController) {
         RailItem(
             icon = Icons.AutoMirrored.Filled.LibraryBooks,
             label = "Library",
-            selected = currentDestination?.hasRoute<Destination.Library>() == true ||
-                currentDestination?.hasRoute<Destination.Detail>() == true,
+            selected = currentDestination?.hasRoute<Destination.Library>() == true,
             onClick = {
                 navController.navigate(Destination.Library) {
                     popUpTo(Destination.Library) { inclusive = true }

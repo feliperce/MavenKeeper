@@ -11,6 +11,7 @@ import java.time.Instant
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
+import kotlin.io.path.readText
 
 class M2RepositoryScanner(
     private val pomParser: PomParser,
@@ -61,6 +62,7 @@ class M2RepositoryScanner(
             Files.getLastModifiedTime(pomPath).toInstant()
         }.getOrDefault(Instant.EPOCH)
         val sizeBytes = versionDir.directorySizeBytes()
+        val sha1 = readSha1(versionDir, parsed.coordinate.artifactId, parsed.coordinate.version, parsed.packaging)
         return Artifact(
             coordinate = parsed.coordinate,
             packaging = parsed.packaging,
@@ -68,6 +70,8 @@ class M2RepositoryScanner(
             lastModified = lastModified,
             versionDirectory = versionDir,
             pomPath = pomPath,
+            sha1 = sha1,
+            licenses = parsed.licenses,
             dependencies = parsed.dependencies,
         )
     }
@@ -77,4 +81,21 @@ class M2RepositoryScanner(
             .filter { it.isRegularFile() }
             .sumOf { runCatching { Files.size(it) }.getOrDefault(0L) }
     }.getOrDefault(0L)
+
+    // Prefer the main artifact's .sha1 (jar/klib/aar). Fall back to pom.sha1.
+    private fun readSha1(versionDir: Path, artifactId: String, version: String, packaging: String): String? {
+        val candidates = listOf(
+            "$artifactId-$version.$packaging.sha1",
+            "$artifactId-$version.jar.sha1",
+            "$artifactId-$version.klib.sha1",
+            "$artifactId-$version.aar.sha1",
+            "$artifactId-$version.pom.sha1",
+        )
+        return candidates.firstNotNullOfOrNull { name ->
+            runCatching {
+                val p = versionDir.resolve(name)
+                if (Files.exists(p)) p.readText().trim().take(40).ifBlank { null } else null
+            }.getOrNull()
+        }
+    }
 }

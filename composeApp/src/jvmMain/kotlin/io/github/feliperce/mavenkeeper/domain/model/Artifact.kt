@@ -10,5 +10,9 @@ data class Artifact(
     val lastModified: Instant,
     val versionDirectory: Path,
     val pomPath: Path,
+    val sha1: String?,
+    val licenses: List<String>,
     val dependencies: List<PomDependency>,
-)
+) {
+    val isSnapshot: Boolean get() = coordinate.version.endsWith("-SNAPSHOT", ignoreCase = true)
+}
