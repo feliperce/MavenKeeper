@@ -48,10 +48,18 @@ data class LibraryUiState(
             .toList()
     }
 
+    val filteredGroupSummaries: List<GroupSummary> by lazy {
+        if (query.isBlank() && filter == LibraryFilter.ALL) return@lazy groupSummaries
+        val visibleGroupIds = filteredGroups.map { it.groupId }.toSet()
+        groupSummaries.filter { it.groupId in visibleGroupIds }
+    }
+
     val artifactsInSelectedGroup: List<ArtifactGroup>
-        get() = selectedGroupId?.let { gid ->
-            filteredGroups.filter { it.groupId == gid }
-        } ?: filteredGroups
+        get() {
+            val gid = selectedGroupId ?: return filteredGroups
+            val inSelected = filteredGroups.filter { it.groupId == gid }
+            return inSelected.ifEmpty { filteredGroups }
+        }
 
     val selectedArtifact: ArtifactGroup?
         get() {
@@ -66,6 +74,14 @@ data class LibraryUiState(
     private fun matchesQuery(group: ArtifactGroup): Boolean {
         if (query.isBlank()) return true
         val q = query.trim().lowercase()
+        if (q.contains(':')) {
+            val parts = q.split(':', limit = 2)
+            val gq = parts[0]
+            val aq = parts.getOrElse(1) { "" }
+            val matchesGroup = gq.isBlank() || group.groupId.lowercase().contains(gq)
+            val matchesArtifact = aq.isBlank() || group.artifactId.lowercase().contains(aq)
+            return matchesGroup && matchesArtifact
+        }
         return group.artifactId.lowercase().contains(q) ||
             group.groupId.lowercase().contains(q)
     }

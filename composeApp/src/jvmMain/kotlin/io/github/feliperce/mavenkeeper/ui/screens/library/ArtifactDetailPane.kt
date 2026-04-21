@@ -4,19 +4,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Inventory2
@@ -27,8 +31,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +59,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
+private enum class DetailTab { VERSIONS, DEPENDENCIES }
+
 @Composable
 fun ArtifactDetailPane(
     state: LibraryUiState,
@@ -65,44 +77,72 @@ fun ArtifactDetailPane(
         )
         return
     }
+    val latest = group.latest
+    val dependencies = latest?.dependencies.orEmpty()
+    val artifactFolder = latest?.versionDirectory?.parent
+    var selectedTab by remember(group.groupArtifact) { mutableStateOf(DetailTab.VERSIONS) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
         item("header") {
-            DetailHeader(group = group, onOpenInFileManager = onOpenInFileManager)
+            DetailHeader(
+                group = group,
+                artifactFolder = artifactFolder,
+                onOpenInFileManager = onOpenInFileManager,
+            )
             Spacer(Modifier.height(20.dp))
         }
         item("stats") {
             StatCards(group = group)
             Spacer(Modifier.height(24.dp))
         }
-        item("versions-header") {
-            SectionHeader(
-                title = "Versões instaladas",
-                hint = "clique em uma versão para abrir no Finder",
+        item("tabs") {
+            DetailTabs(
+                selected = selectedTab,
+                onSelectedChange = { selectedTab = it },
+                versionsCount = group.versions.size,
+                depsCount = dependencies.size,
             )
+            Spacer(Modifier.height(16.dp))
         }
-        itemsIndexed(group.versions, key = { _, a -> a.versionDirectory.toString() }) { index, artifact ->
-            VersionRow(
-                artifact = artifact,
-                isLatest = index == 0,
-                onDelete = { onDeleteRequest(artifact) },
-                onOpen = { onOpenInFileManager(artifact.versionDirectory) },
-            )
-            Spacer(Modifier.height(4.dp))
-        }
-        val latest = group.latest
-        if (latest != null && latest.dependencies.isNotEmpty()) {
-            item("deps-header") {
-                Spacer(Modifier.height(24.dp))
-                SectionHeader(
-                    title = "Dependências",
-                    hint = "de ${latest.coordinate.version}",
-                )
+        when (selectedTab) {
+            DetailTab.VERSIONS -> {
+                item("versions-hint") {
+                    Text(
+                        text = "clique em uma versão para abrir sua pasta",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                itemsIndexed(group.versions, key = { _, a -> a.versionDirectory.toString() }) { index, artifact ->
+                    VersionRow(
+                        artifact = artifact,
+                        isLatest = index == 0,
+                        onDelete = { onDeleteRequest(artifact) },
+                        onOpen = { onOpenInFileManager(artifact.versionDirectory) },
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
             }
-            items(latest.dependencies, key = { "${it.coordinate}-${it.scope}" }) { dep ->
-                DependencyRow(dep)
+            DetailTab.DEPENDENCIES -> {
+                if (dependencies.isEmpty()) {
+                    item("deps-empty") { DependenciesEmpty() }
+                } else {
+                    item("deps-info") {
+                        Text(
+                            text = "da versão ${latest!!.coordinate.version}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
+                    items(dependencies, key = { "${it.coordinate}-${it.scope}" }) { dep ->
+                        DependencyRow(dep)
+                    }
+                }
             }
         }
     }
@@ -111,6 +151,7 @@ fun ArtifactDetailPane(
 @Composable
 private fun DetailHeader(
     group: ArtifactGroup,
+    artifactFolder: Path?,
     onOpenInFileManager: (Path) -> Unit,
 ) {
     Row(
@@ -132,32 +173,25 @@ private fun DetailHeader(
                 ),
                 color = MaterialTheme.colorScheme.primary,
             )
-            val latestLicense = group.latest?.licenses?.firstOrNull()
-            if (latestLicense != null) {
-                Text(
-                    text = "Licença: $latestLicense",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
         }
-        Button(
-            onClick = { onOpenInFileManager(group.latest?.versionDirectory ?: return@Button) },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Icon(
-                Icons.Filled.FolderOpen,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(end = 8.dp)
-                    .width(18.dp)
-                    .height(18.dp),
-            )
-            Text("Abrir no Finder")
+        if (artifactFolder != null) {
+            Button(
+                onClick = { onOpenInFileManager(artifactFolder) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Icon(
+                    Icons.Filled.FolderOpen,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .width(18.dp)
+                        .height(18.dp),
+                )
+                Text("Abrir pasta")
+            }
         }
     }
 }
@@ -168,13 +202,15 @@ private fun StatCards(group: ArtifactGroup) {
     val latestUsed = latest?.lastModified?.let { formatRelative(it) } ?: "—"
     val license = latest?.licenses?.firstOrNull() ?: "não declarada"
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         StatCard(label = "Versões", value = group.versions.size.toString(), modifier = Modifier.weight(1f))
         StatCard(label = "Tamanho total", value = group.totalSize.formatBytes(), modifier = Modifier.weight(1f))
         StatCard(label = "Último uso", value = latestUsed, modifier = Modifier.weight(1f))
-        StatCard(label = "Licença", value = license, valueStyleSmall = true, modifier = Modifier.weight(1f))
+        StatCard(label = "Licença", value = license, modifier = Modifier.weight(1f))
     }
 }
 
@@ -183,10 +219,9 @@ private fun StatCard(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
-    valueStyleSmall: Boolean = false,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.fillMaxHeight(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
@@ -199,7 +234,7 @@ private fun StatCard(
             )
             Text(
                 text = value,
-                style = if (valueStyleSmall) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -210,27 +245,96 @@ private fun StatCard(
 }
 
 @Composable
-private fun SectionHeader(title: String, hint: String? = null) {
+private fun DetailTabs(
+    selected: DetailTab,
+    onSelectedChange: (DetailTab) -> Unit,
+    versionsCount: Int,
+    depsCount: Int,
+) {
+    SecondaryTabRow(
+        selectedTabIndex = selected.ordinal,
+        containerColor = Color.Transparent,
+    ) {
+        Tab(
+            selected = selected == DetailTab.VERSIONS,
+            onClick = { onSelectedChange(DetailTab.VERSIONS) },
+            text = {
+                TabLabel(
+                    title = "Versões instaladas",
+                    count = versionsCount,
+                    active = selected == DetailTab.VERSIONS,
+                )
+            },
+        )
+        Tab(
+            selected = selected == DetailTab.DEPENDENCIES,
+            onClick = { onSelectedChange(DetailTab.DEPENDENCIES) },
+            text = {
+                TabLabel(
+                    title = "Dependências",
+                    count = depsCount,
+                    active = selected == DetailTab.DEPENDENCIES,
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun TabLabel(title: String, count: Int, active: Boolean) {
     Row(
-        modifier = Modifier.padding(bottom = 10.dp),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp,
+            text = title,
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
             ),
-            color = MaterialTheme.colorScheme.onSurface,
         )
-        if (hint != null) {
+        Box(
+            modifier = Modifier
+                .background(
+                    if (active) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        ) {
             Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = count.toString(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun DependenciesEmpty() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.AccountTree,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = "Nenhuma dependência declarada",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

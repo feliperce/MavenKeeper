@@ -186,7 +186,9 @@ private fun ListContent(
     onGroupClick: (String?) -> Unit,
     onArtifactClick: (ArtifactGroup) -> Unit,
 ) {
-    val summariesToShow = state.groupSummaries.take(8)
+    val filteredSummaries = state.filteredGroupSummaries
+    val hasActiveSearch = state.query.isNotBlank()
+    val summariesToShow = if (hasActiveSearch) filteredSummaries else filteredSummaries.take(8)
     val visibleArtifacts = state.artifactsInSelectedGroup
 
     LazyColumn(
@@ -195,7 +197,7 @@ private fun ListContent(
     ) {
         if (summariesToShow.isNotEmpty()) {
             item("groups-header") {
-                SectionLabel("GROUPS (${state.groupSummaries.size})")
+                SectionLabel("GROUPS (${filteredSummaries.size})")
             }
             items(summariesToShow, key = { "g-${it.groupId}" }) { summary ->
                 GroupRow(
