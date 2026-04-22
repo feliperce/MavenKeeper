@@ -21,6 +21,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.settings_about_description
+import mavenkeeper.composeapp.generated.resources.settings_about_section
+import mavenkeeper.composeapp.generated.resources.settings_about_version
+import mavenkeeper.composeapp.generated.resources.settings_apply
+import mavenkeeper.composeapp.generated.resources.settings_currently_resolved
+import mavenkeeper.composeapp.generated.resources.settings_custom_path_label
+import mavenkeeper.composeapp.generated.resources.settings_custom_path_placeholder
+import mavenkeeper.composeapp.generated.resources.settings_invalid_path
+import mavenkeeper.composeapp.generated.resources.settings_repo_path_section
+import mavenkeeper.composeapp.generated.resources.settings_restore_default
+import mavenkeeper.composeapp.generated.resources.settings_title
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +46,7 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text("Settings") })
+            TopAppBar(title = { Text(stringResource(Res.string.settings_title)) })
         },
     ) { innerPadding ->
         Column(
@@ -54,11 +67,11 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Local repository path",
+                        text = stringResource(Res.string.settings_repo_path_section),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                        text = "Currently resolved: ${state.resolvedPath}",
+                        text = stringResource(Res.string.settings_currently_resolved, state.resolvedPath),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -66,20 +79,25 @@ fun SettingsScreen(
                         value = state.draftPath,
                         onValueChange = viewModel::onPathChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Custom path (optional)") },
-                        placeholder = { Text("e.g. /home/you/.m2/repository") },
+                        label = { Text(stringResource(Res.string.settings_custom_path_label)) },
+                        placeholder = { Text(stringResource(Res.string.settings_custom_path_placeholder)) },
                         isError = state.validationError != null,
                         supportingText = state.validationError?.let { err ->
-                            { Text(err, color = MaterialTheme.colorScheme.error) }
+                            {
+                                Text(
+                                    text = err.resolve(),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
                         },
                         singleLine = true,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = viewModel::onApplyClick) {
-                            Text("Apply & Rescan")
+                            Text(stringResource(Res.string.settings_apply))
                         }
                         OutlinedButton(onClick = viewModel::onRestoreDefaultClick) {
-                            Text("Restore default")
+                            Text(stringResource(Res.string.settings_restore_default))
                         }
                     }
                 }
@@ -96,15 +114,15 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
-                        text = "About",
+                        text = stringResource(Res.string.settings_about_section),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                        text = "MavenKeeper v0.1.0",
+                        text = stringResource(Res.string.settings_about_version),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = "Manage your local Maven repository.",
+                        text = stringResource(Res.string.settings_about_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -112,4 +130,9 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun SettingsValidationError.resolve(): String = when (this) {
+    SettingsValidationError.INVALID_PATH -> stringResource(Res.string.settings_invalid_path)
 }

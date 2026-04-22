@@ -69,9 +69,11 @@ class LibraryViewModel(
     fun onOpenInFileManager(path: Path) {
         val result = FileManager.open(path)
         result.onFailure { err ->
-            _state.update { it.copy(transientMessage = "Could not open: ${err.message}") }
+            _state.update {
+                it.copy(transientMessage = TransientMessage.OpenFailure(err.message.orEmpty()))
+            }
         }.onSuccess {
-            _state.update { it.copy(transientMessage = "Opened in system file manager") }
+            _state.update { it.copy(transientMessage = TransientMessage.OpenSuccess) }
         }
     }
 
@@ -89,10 +91,14 @@ class LibraryViewModel(
         viewModelScope.launch {
             repository.delete(target)
                 .onSuccess {
-                    _state.update { it.copy(transientMessage = "Version ${target.coordinate.version} deleted") }
+                    _state.update {
+                        it.copy(transientMessage = TransientMessage.VersionDeleted(target.coordinate.version))
+                    }
                 }
                 .onFailure { err ->
-                    _state.update { it.copy(transientMessage = "Delete failed: ${err.message}") }
+                    _state.update {
+                        it.copy(transientMessage = TransientMessage.DeleteFailed(err.message.orEmpty()))
+                    }
                 }
         }
     }
@@ -100,7 +106,7 @@ class LibraryViewModel(
     fun onPurgeSnapshotsRequest() {
         val snapshots = _state.value.allGroups.flatMap { it.versions }.filter { it.isSnapshot }
         if (snapshots.isEmpty()) {
-            _state.update { it.copy(transientMessage = "No snapshots found") }
+            _state.update { it.copy(transientMessage = TransientMessage.NoSnapshots) }
             return
         }
         _state.update {
@@ -122,10 +128,12 @@ class LibraryViewModel(
         viewModelScope.launch {
             repository.purgeSnapshots()
                 .onSuccess { count ->
-                    _state.update { it.copy(transientMessage = "Purged $count snapshot version(s)") }
+                    _state.update { it.copy(transientMessage = TransientMessage.Purged(count)) }
                 }
                 .onFailure { err ->
-                    _state.update { it.copy(transientMessage = "Purge failed: ${err.message}") }
+                    _state.update {
+                        it.copy(transientMessage = TransientMessage.PurgeFailed(err.message.orEmpty()))
+                    }
                 }
         }
     }

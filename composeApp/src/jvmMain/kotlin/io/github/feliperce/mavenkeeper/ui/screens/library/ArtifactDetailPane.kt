@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.feliperce.mavenkeeper.domain.model.Artifact
@@ -55,7 +56,29 @@ import io.github.feliperce.mavenkeeper.ui.components.EmptyState
 import io.github.feliperce.mavenkeeper.ui.components.ScopeBadge
 import io.github.feliperce.mavenkeeper.ui.components.formatBytes
 import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
-import androidx.compose.ui.tooling.preview.Preview
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.detail_badge_latest
+import mavenkeeper.composeapp.generated.resources.detail_badge_snapshot
+import mavenkeeper.composeapp.generated.resources.detail_delete_version_cd
+import mavenkeeper.composeapp.generated.resources.detail_dependencies_empty
+import mavenkeeper.composeapp.generated.resources.detail_dependencies_from_version
+import mavenkeeper.composeapp.generated.resources.detail_empty_description
+import mavenkeeper.composeapp.generated.resources.detail_empty_title
+import mavenkeeper.composeapp.generated.resources.detail_license_undeclared
+import mavenkeeper.composeapp.generated.resources.detail_open_folder
+import mavenkeeper.composeapp.generated.resources.detail_stat_last_used
+import mavenkeeper.composeapp.generated.resources.detail_stat_license
+import mavenkeeper.composeapp.generated.resources.detail_stat_total_size
+import mavenkeeper.composeapp.generated.resources.detail_stat_versions
+import mavenkeeper.composeapp.generated.resources.detail_tab_dependencies
+import mavenkeeper.composeapp.generated.resources.detail_tab_versions
+import mavenkeeper.composeapp.generated.resources.detail_versions_hint
+import mavenkeeper.composeapp.generated.resources.time_days_ago
+import mavenkeeper.composeapp.generated.resources.time_hours_ago
+import mavenkeeper.composeapp.generated.resources.time_months_ago
+import mavenkeeper.composeapp.generated.resources.time_now
+import mavenkeeper.composeapp.generated.resources.time_weeks_ago
+import org.jetbrains.compose.resources.stringResource
 import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
@@ -76,8 +99,8 @@ fun ArtifactDetailPane(
     if (group == null) {
         EmptyState(
             icon = Icons.Filled.Inventory2,
-            title = "Selecione um artefato",
-            description = "Escolha um item da lista para ver detalhes.",
+            title = stringResource(Res.string.detail_empty_title),
+            description = stringResource(Res.string.detail_empty_description),
         )
         return
     }
@@ -115,7 +138,7 @@ fun ArtifactDetailPane(
             DetailTab.VERSIONS -> {
                 item("versions-hint") {
                     Text(
-                        text = "clique em uma versão para abrir sua pasta",
+                        text = stringResource(Res.string.detail_versions_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -137,7 +160,10 @@ fun ArtifactDetailPane(
                 } else {
                     item("deps-info") {
                         Text(
-                            text = "da versão ${latest!!.coordinate.version}",
+                            text = stringResource(
+                                Res.string.detail_dependencies_from_version,
+                                latest!!.coordinate.version,
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp),
@@ -194,7 +220,7 @@ private fun DetailHeader(
                         .width(18.dp)
                         .height(18.dp),
                 )
-                Text("Abrir pasta")
+                Text(stringResource(Res.string.detail_open_folder))
             }
         }
     }
@@ -204,17 +230,34 @@ private fun DetailHeader(
 private fun StatCards(group: ArtifactGroup) {
     val latest = group.latest
     val latestUsed = latest?.lastModified?.let { formatRelative(it) } ?: "—"
-    val license = latest?.licenses?.firstOrNull() ?: "não declarada"
+    val license = latest?.licenses?.firstOrNull()
+        ?: stringResource(Res.string.detail_license_undeclared)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        StatCard(label = "Versões", value = group.versions.size.toString(), modifier = Modifier.weight(1f))
-        StatCard(label = "Tamanho total", value = group.totalSize.formatBytes(), modifier = Modifier.weight(1f))
-        StatCard(label = "Último uso", value = latestUsed, modifier = Modifier.weight(1f))
-        StatCard(label = "Licença", value = license, modifier = Modifier.weight(1f))
+        StatCard(
+            label = stringResource(Res.string.detail_stat_versions),
+            value = group.versions.size.toString(),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.detail_stat_total_size),
+            value = group.totalSize.formatBytes(),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.detail_stat_last_used),
+            value = latestUsed,
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            label = stringResource(Res.string.detail_stat_license),
+            value = license,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -264,7 +307,7 @@ private fun DetailTabs(
             onClick = { onSelectedChange(DetailTab.VERSIONS) },
             text = {
                 TabLabel(
-                    title = "Versões instaladas",
+                    title = stringResource(Res.string.detail_tab_versions),
                     count = versionsCount,
                     active = selected == DetailTab.VERSIONS,
                 )
@@ -275,7 +318,7 @@ private fun DetailTabs(
             onClick = { onSelectedChange(DetailTab.DEPENDENCIES) },
             text = {
                 TabLabel(
-                    title = "Dependências",
+                    title = stringResource(Res.string.detail_tab_dependencies),
                     count = depsCount,
                     active = selected == DetailTab.DEPENDENCIES,
                 )
@@ -335,7 +378,7 @@ private fun DependenciesEmpty() {
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            text = "Nenhuma dependência declarada",
+            text = stringResource(Res.string.detail_dependencies_empty),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -349,6 +392,8 @@ private fun VersionRow(
     onDelete: () -> Unit,
     onOpen: () -> Unit,
 ) {
+    val relativeTime = formatRelative(artifact.lastModified)
+    val deleteCd = stringResource(Res.string.detail_delete_version_cd, artifact.coordinate.version)
     Card(
         onClick = onOpen,
         colors = CardDefaults.cardColors(
@@ -370,21 +415,21 @@ private fun VersionRow(
                     )
                     if (isLatest) {
                         Badge(
-                            text = "LATEST",
+                            text = stringResource(Res.string.detail_badge_latest),
                             tonal = MaterialTheme.colorScheme.primaryContainer,
                             onTonal = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                     if (artifact.isSnapshot) {
                         Badge(
-                            text = "SNAPSHOT",
+                            text = stringResource(Res.string.detail_badge_snapshot),
                             tonal = MaterialTheme.colorScheme.tertiaryContainer,
                             onTonal = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                     }
                 }
                 Text(
-                    text = "${artifact.sizeBytes.formatBytes()} · ${formatRelative(artifact.lastModified)} · ${artifact.packaging}",
+                    text = "${artifact.sizeBytes.formatBytes()} · $relativeTime · ${artifact.packaging}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -400,7 +445,7 @@ private fun VersionRow(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
-                    contentDescription = "Delete ${artifact.coordinate.version}",
+                    contentDescription = deleteCd,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -458,16 +503,17 @@ private fun DependencyRow(dependency: PomDependency) {
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
 
+@Composable
 fun formatRelative(instant: Instant): String {
     val now = Instant.now()
     val hours = ChronoUnit.HOURS.between(instant, now)
     val days = ChronoUnit.DAYS.between(instant, now)
     return when {
-        hours < 1 -> "agora"
-        hours < 24 -> "${hours}h atrás"
-        days < 7 -> "${days}d atrás"
-        days < 30 -> "${days / 7} sem atrás"
-        days < 365 -> "${days / 30} mês atrás"
+        hours < 1 -> stringResource(Res.string.time_now)
+        hours < 24 -> stringResource(Res.string.time_hours_ago, hours)
+        days < 7 -> stringResource(Res.string.time_days_ago, days)
+        days < 30 -> stringResource(Res.string.time_weeks_ago, days / 7)
+        days < 365 -> stringResource(Res.string.time_months_ago, days / 30)
         else -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()).toLocalDate())
     }
 }

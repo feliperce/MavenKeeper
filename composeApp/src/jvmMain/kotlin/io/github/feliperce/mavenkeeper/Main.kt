@@ -10,6 +10,9 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.feliperce.mavenkeeper.di.AppContainer
 import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.app_name
+import org.jetbrains.compose.resources.stringResource
 
 fun main() = application {
     val windowState = rememberWindowState(
@@ -19,7 +22,7 @@ fun main() = application {
     val container = remember { AppContainer() }
     Window(
         onCloseRequest = ::exitApplication,
-        title = "MavenKeeper",
+        title = stringResource(Res.string.app_name),
         state = windowState,
     ) {
         MavenKeeperTheme {

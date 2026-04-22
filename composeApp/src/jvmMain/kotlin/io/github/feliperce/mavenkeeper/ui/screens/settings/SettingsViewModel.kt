@@ -34,7 +34,7 @@ class SettingsViewModel(
         val raw = _state.value.draftPath.trim()
         val override = raw.takeIf { it.isNotEmpty() }?.let(::Path)
         if (override != null && !(override.exists() && override.isDirectory())) {
-            _state.update { it.copy(validationError = "Path does not exist or is not a directory.") }
+            _state.update { it.copy(validationError = SettingsValidationError.INVALID_PATH) }
             return
         }
         viewModelScope.launch {
@@ -61,8 +61,12 @@ class SettingsViewModel(
     }
 }
 
+enum class SettingsValidationError {
+    INVALID_PATH,
+}
+
 data class SettingsUiState(
     val resolvedPath: String,
     val draftPath: String,
-    val validationError: String? = null,
+    val validationError: SettingsValidationError? = null,
 )

@@ -8,12 +8,22 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-enum class LibraryFilter(val label: String) {
-    ALL("Todos"),
-    RECENT("Recentes"),
-    LARGEST("Maiores"),
-    SNAPSHOTS("Snapshots"),
-    STALE("Stale"),
+enum class LibraryFilter {
+    ALL,
+    RECENT,
+    LARGEST,
+    SNAPSHOTS,
+    STALE,
+}
+
+sealed interface TransientMessage {
+    data object OpenSuccess : TransientMessage
+    data class OpenFailure(val reason: String) : TransientMessage
+    data class VersionDeleted(val version: String) : TransientMessage
+    data class DeleteFailed(val reason: String) : TransientMessage
+    data object NoSnapshots : TransientMessage
+    data class Purged(val count: Int) : TransientMessage
+    data class PurgeFailed(val reason: String) : TransientMessage
 }
 
 data class LibraryUiState(
@@ -27,7 +37,7 @@ data class LibraryUiState(
     val selectedArtifactKey: String? = null,
     val pendingDelete: Artifact? = null,
     val purgeConfirm: PurgeConfirmation? = null,
-    val transientMessage: String? = null,
+    val transientMessage: TransientMessage? = null,
 ) {
     val isScanning: Boolean get() = progress is ScanProgress.Scanning
     val hasArtifacts: Boolean get() = allGroups.isNotEmpty()

@@ -5,10 +5,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import io.github.feliperce.mavenkeeper.domain.model.Artifact
 import io.github.feliperce.mavenkeeper.ui.screens.library.LibraryPreviewSamples
 import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
-import androidx.compose.ui.tooling.preview.Preview
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.delete_dialog_cancel
+import mavenkeeper.composeapp.generated.resources.delete_dialog_confirm
+import mavenkeeper.composeapp.generated.resources.delete_dialog_text
+import mavenkeeper.composeapp.generated.resources.delete_dialog_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun DeleteVersionDialog(
@@ -18,27 +24,28 @@ fun DeleteVersionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete version?") },
+        title = { Text(stringResource(Res.string.delete_dialog_title)) },
         text = {
             Text(
-                buildString {
-                    append("This will permanently delete ")
-                    append(artifact.coordinate.toString())
-                    append(" from disk, freeing ")
-                    append(artifact.sizeBytes.formatBytes())
-                    append(". This action cannot be undone.")
-                },
+                text = stringResource(
+                    Res.string.delete_dialog_text,
+                    artifact.coordinate.toString(),
+                    artifact.sizeBytes.formatBytes(),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(Res.string.delete_dialog_confirm),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.delete_dialog_cancel))
             }
         },
     )

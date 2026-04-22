@@ -24,6 +24,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.feliperce.mavenkeeper.ui.components.DeleteVersionDialog
 import io.github.feliperce.mavenkeeper.ui.components.PurgeSnapshotsDialog
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.message_delete_failed
+import mavenkeeper.composeapp.generated.resources.message_no_snapshots
+import mavenkeeper.composeapp.generated.resources.message_open_failure
+import mavenkeeper.composeapp.generated.resources.message_open_success
+import mavenkeeper.composeapp.generated.resources.message_purge_failed
+import mavenkeeper.composeapp.generated.resources.message_purged
+import mavenkeeper.composeapp.generated.resources.message_version_deleted
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,9 +43,11 @@ fun LibraryScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.transientMessage) {
-        state.transientMessage?.let { msg ->
-            snackbar.showSnackbar(msg)
+    val transient = state.transientMessage
+    if (transient != null) {
+        val text = transient.resolve()
+        LaunchedEffect(transient) {
+            snackbar.showSnackbar(text)
             viewModel.onMessageConsumed()
         }
     }
@@ -98,4 +109,15 @@ fun LibraryScreen(
             }
         }
     }
+}
+
+@Composable
+private fun TransientMessage.resolve(): String = when (this) {
+    TransientMessage.OpenSuccess -> stringResource(Res.string.message_open_success)
+    is TransientMessage.OpenFailure -> stringResource(Res.string.message_open_failure, reason)
+    is TransientMessage.VersionDeleted -> stringResource(Res.string.message_version_deleted, version)
+    is TransientMessage.DeleteFailed -> stringResource(Res.string.message_delete_failed, reason)
+    TransientMessage.NoSnapshots -> stringResource(Res.string.message_no_snapshots)
+    is TransientMessage.Purged -> stringResource(Res.string.message_purged, count)
+    is TransientMessage.PurgeFailed -> stringResource(Res.string.message_purge_failed, reason)
 }

@@ -69,7 +69,7 @@ private fun EmptyStatePreview() {
         Surface(color = MaterialTheme.colorScheme.background) {
             EmptyState(
                 icon = Icons.Filled.FolderOff,
-                title = "Repositório vazio",
+                title = "Repository empty",
                 description = "/home/user/.m2/repository",
                 action = { TextButton(onClick = {}) { Text("Rescan") } },
             )

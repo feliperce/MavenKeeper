@@ -40,7 +40,7 @@ fun LoadingState(
 private fun LoadingStatePreview() {
     MavenKeeperTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LoadingState(label = "Escaneando… (128 encontrados)")
+            LoadingState(label = "Scanning… (128 found)")
         }
     }
 }

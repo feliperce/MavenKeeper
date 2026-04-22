@@ -1,5 +1,7 @@
 package io.github.feliperce.mavenkeeper.ui.screens.library
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.FilterChip
@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.feliperce.mavenkeeper.domain.model.ArtifactGroup
@@ -49,7 +50,32 @@ import io.github.feliperce.mavenkeeper.ui.components.LoadingState
 import io.github.feliperce.mavenkeeper.ui.components.SearchField
 import io.github.feliperce.mavenkeeper.ui.components.formatBytes
 import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
-import androidx.compose.ui.tooling.preview.Preview
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.filter_all
+import mavenkeeper.composeapp.generated.resources.filter_largest
+import mavenkeeper.composeapp.generated.resources.filter_recent
+import mavenkeeper.composeapp.generated.resources.filter_snapshots
+import mavenkeeper.composeapp.generated.resources.filter_stale
+import mavenkeeper.composeapp.generated.resources.library_all_artifacts_section
+import mavenkeeper.composeapp.generated.resources.library_artifact_row_meta
+import mavenkeeper.composeapp.generated.resources.library_artifacts_in_section
+import mavenkeeper.composeapp.generated.resources.library_empty_description_default
+import mavenkeeper.composeapp.generated.resources.library_empty_title
+import mavenkeeper.composeapp.generated.resources.library_group_artifacts_count
+import mavenkeeper.composeapp.generated.resources.library_groups_section
+import mavenkeeper.composeapp.generated.resources.library_no_matches_description
+import mavenkeeper.composeapp.generated.resources.library_no_matches_title
+import mavenkeeper.composeapp.generated.resources.library_not_found_title
+import mavenkeeper.composeapp.generated.resources.library_purge_snapshots_cd
+import mavenkeeper.composeapp.generated.resources.library_rescan
+import mavenkeeper.composeapp.generated.resources.library_rescan_cd
+import mavenkeeper.composeapp.generated.resources.library_retry
+import mavenkeeper.composeapp.generated.resources.library_scanning_label
+import mavenkeeper.composeapp.generated.resources.library_search_placeholder
+import mavenkeeper.composeapp.generated.resources.library_stats
+import mavenkeeper.composeapp.generated.resources.library_title
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ArtifactListPane(
@@ -71,7 +97,7 @@ fun ArtifactListPane(
             query = state.query,
             onQueryChange = onQueryChange,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            placeholder = "Pesquisar groupId:artifactId",
+            placeholder = stringResource(Res.string.library_search_placeholder),
         )
         FilterChipRow(
             current = state.filter,
@@ -84,24 +110,29 @@ fun ArtifactListPane(
                 state.progress is ScanProgress.Error -> {
                     EmptyState(
                         icon = Icons.Filled.FolderOff,
-                        title = "Repository not found",
+                        title = stringResource(Res.string.library_not_found_title),
                         description = state.progress.message,
                         action = {
-                            TextButton(onClick = onRescan) { Text("Tentar novamente") }
+                            TextButton(onClick = onRescan) {
+                                Text(stringResource(Res.string.library_retry))
+                            }
                         },
                     )
                 }
                 state.isScanning && !state.hasArtifacts -> {
                     val count = (state.progress as? ScanProgress.Scanning)?.discovered ?: 0
-                    LoadingState(label = "Escaneando… ($count encontrados)")
+                    LoadingState(label = stringResource(Res.string.library_scanning_label, count))
                 }
                 !state.hasArtifacts -> {
                     EmptyState(
                         icon = Icons.Filled.FolderOff,
-                        title = "Repositório vazio",
-                        description = state.repositoryRoot?.toString() ?: ".m2 não detectado",
+                        title = stringResource(Res.string.library_empty_title),
+                        description = state.repositoryRoot?.toString()
+                            ?: stringResource(Res.string.library_empty_description_default),
                         action = {
-                            TextButton(onClick = onRescan) { Text("Rescan") }
+                            TextButton(onClick = onRescan) {
+                                Text(stringResource(Res.string.library_rescan))
+                            }
                         },
                     )
                 }
@@ -131,12 +162,17 @@ private fun ListTopBar(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = ".m2 / repository",
+                text = stringResource(Res.string.library_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "${state.totalArtifacts} artefatos · ${state.totalVersions} versões · ${state.totalSize.formatBytes()}",
+                text = stringResource(
+                    Res.string.library_stats,
+                    state.totalArtifacts,
+                    state.totalVersions,
+                    state.totalSize.formatBytes(),
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -144,14 +180,14 @@ private fun ListTopBar(
         IconButton(onClick = onPurgeSnapshots) {
             Icon(
                 Icons.Filled.CleaningServices,
-                contentDescription = "Purgar snapshots",
+                contentDescription = stringResource(Res.string.library_purge_snapshots_cd),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         IconButton(onClick = onRescan) {
             Icon(
                 Icons.Filled.Refresh,
-                contentDescription = "Rescan",
+                contentDescription = stringResource(Res.string.library_rescan_cd),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -172,7 +208,12 @@ private fun FilterChipRow(
             FilterChip(
                 selected = current == filter,
                 onClick = { onFilterChange(filter) },
-                label = { Text(filter.label, style = MaterialTheme.typography.labelMedium) },
+                label = {
+                    Text(
+                        stringResource(filter.labelRes()),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -180,6 +221,14 @@ private fun FilterChipRow(
             )
         }
     }
+}
+
+private fun LibraryFilter.labelRes(): StringResource = when (this) {
+    LibraryFilter.ALL -> Res.string.filter_all
+    LibraryFilter.RECENT -> Res.string.filter_recent
+    LibraryFilter.LARGEST -> Res.string.filter_largest
+    LibraryFilter.SNAPSHOTS -> Res.string.filter_snapshots
+    LibraryFilter.STALE -> Res.string.filter_stale
 }
 
 @Composable
@@ -199,7 +248,9 @@ private fun ListContent(
     ) {
         if (summariesToShow.isNotEmpty()) {
             item("groups-header") {
-                SectionLabel("GROUPS (${filteredSummaries.size})")
+                SectionLabel(
+                    stringResource(Res.string.library_groups_section, filteredSummaries.size),
+                )
             }
             items(summariesToShow, key = { "g-${it.groupId}" }) { summary ->
                 GroupRow(
@@ -211,17 +262,24 @@ private fun ListContent(
         }
 
         item("artifacts-header") {
-            val label = state.selectedGroupId?.substringAfterLast('.')?.uppercase()
-                ?: "TODOS OS ARTEFATOS"
-            SectionLabel("ARTEFATOS${state.selectedGroupId?.let { " DE $label" }.orEmpty()}")
+            val selectedGroupId = state.selectedGroupId
+            val headerText = if (selectedGroupId == null) {
+                stringResource(Res.string.library_all_artifacts_section)
+            } else {
+                stringResource(
+                    Res.string.library_artifacts_in_section,
+                    selectedGroupId.substringAfterLast('.').uppercase(),
+                )
+            }
+            SectionLabel(headerText)
         }
 
         if (visibleArtifacts.isEmpty()) {
             item("artifacts-empty") {
                 EmptyState(
                     icon = Icons.Filled.SearchOff,
-                    title = "Nada aqui",
-                    description = "Ajuste filtros ou busca.",
+                    title = stringResource(Res.string.library_no_matches_title),
+                    description = stringResource(Res.string.library_no_matches_description),
                     modifier = Modifier.padding(top = 40.dp),
                 )
             }
@@ -294,7 +352,7 @@ private fun GroupRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${summary.artifactCount} artefatos",
+                    text = stringResource(Res.string.library_group_artifacts_count, summary.artifactCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -345,6 +403,11 @@ private fun ArtifactRow(
 @Composable
 private fun ArtifactRowMeta(group: ArtifactGroup) {
     val latest = group.latest
+    val summary = stringResource(
+        Res.string.library_artifact_row_meta,
+        group.versions.size,
+        group.totalSize.formatBytes(),
+    )
     val text = buildAnnotatedString {
         if (latest != null) {
             withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
@@ -352,7 +415,7 @@ private fun ArtifactRowMeta(group: ArtifactGroup) {
             }
             append(" · ")
         }
-        append("${group.versions.size} versões · ${group.totalSize.formatBytes()}")
+        append(summary)
     }
     Text(
         text = text,

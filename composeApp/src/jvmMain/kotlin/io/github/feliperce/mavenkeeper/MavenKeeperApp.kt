@@ -23,6 +23,10 @@ import androidx.navigation.compose.rememberNavController
 import io.github.feliperce.mavenkeeper.di.AppContainer
 import io.github.feliperce.mavenkeeper.ui.navigation.Destination
 import io.github.feliperce.mavenkeeper.ui.navigation.MavenKeeperNavHost
+import mavenkeeper.composeapp.generated.resources.Res
+import mavenkeeper.composeapp.generated.resources.nav_library
+import mavenkeeper.composeapp.generated.resources.nav_settings
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MavenKeeperApp(container: AppContainer) {
@@ -55,7 +59,7 @@ private fun AppNavigationRail(navController: NavHostController) {
     NavigationRail {
         RailItem(
             icon = Icons.AutoMirrored.Filled.LibraryBooks,
-            label = "Library",
+            label = stringResource(Res.string.nav_library),
             selected = currentDestination?.hasRoute<Destination.Library>() == true,
             onClick = {
                 navController.navigate(Destination.Library) {
@@ -66,7 +70,7 @@ private fun AppNavigationRail(navController: NavHostController) {
         )
         RailItem(
             icon = Icons.Filled.Settings,
-            label = "Settings",
+            label = stringResource(Res.string.nav_settings),
             selected = currentDestination?.hasRoute<Destination.Settings>() == true,
             onClick = {
                 navController.navigate(Destination.Settings) {
