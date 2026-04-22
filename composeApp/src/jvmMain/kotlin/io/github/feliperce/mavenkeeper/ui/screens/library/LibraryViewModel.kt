@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.feliperce.mavenkeeper.data.local.FileManager
 import io.github.feliperce.mavenkeeper.domain.model.Artifact
+import io.github.feliperce.mavenkeeper.domain.model.ArtifactGroup
 import io.github.feliperce.mavenkeeper.domain.repository.ArtifactRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +58,7 @@ class LibraryViewModel(
         _state.update { it.copy(selectedGroupId = if (it.selectedGroupId == groupId) null else groupId) }
     }
 
-    fun onArtifactSelected(group: io.github.feliperce.mavenkeeper.domain.model.ArtifactGroup) {
+    fun onArtifactSelected(group: ArtifactGroup) {
         _state.update { it.copy(selectedArtifactKey = "${group.groupId}:${group.artifactId}") }
     }
 

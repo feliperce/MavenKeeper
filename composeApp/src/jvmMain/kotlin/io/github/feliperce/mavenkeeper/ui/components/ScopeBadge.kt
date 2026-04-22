@@ -1,13 +1,18 @@
 package io.github.feliperce.mavenkeeper.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.feliperce.mavenkeeper.domain.model.PomDependency
+import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun ScopeBadge(
@@ -30,4 +35,19 @@ fun ScopeBadge(
             .background(bg, MaterialTheme.shapes.small)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
+}
+
+@Preview
+@Composable
+private fun ScopeBadgePreview() {
+    MavenKeeperTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PomDependency.Scope.entries.forEach { ScopeBadge(it) }
+            }
+        }
+    }
 }

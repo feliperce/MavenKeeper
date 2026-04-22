@@ -6,6 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import io.github.feliperce.mavenkeeper.domain.model.Artifact
+import io.github.feliperce.mavenkeeper.ui.screens.library.LibraryPreviewSamples
+import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun DeleteVersionDialog(
@@ -39,4 +42,16 @@ fun DeleteVersionDialog(
             }
         },
     )
+}
+
+@Preview
+@Composable
+private fun DeleteVersionDialogPreview() {
+    MavenKeeperTheme {
+        DeleteVersionDialog(
+            artifact = LibraryPreviewSamples.artifact(),
+            onConfirm = {},
+            onDismiss = {},
+        )
+    }
 }

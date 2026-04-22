@@ -14,11 +14,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.FileVisitResult
 
 class LocalArtifactRepositoryImpl(
     private val pathProvider: M2PathProvider,
@@ -77,7 +78,7 @@ class LocalArtifactRepositoryImpl(
                 return FileVisitResult.CONTINUE
             }
 
-            override fun postVisitDirectory(dir: Path, exc: java.io.IOException?): FileVisitResult {
+            override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
                 Files.delete(dir)
                 return FileVisitResult.CONTINUE
             }

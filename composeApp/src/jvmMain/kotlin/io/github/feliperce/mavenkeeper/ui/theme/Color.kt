@@ -3,9 +3,6 @@ package io.github.feliperce.mavenkeeper.ui.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
 
-// Terracota M3 Dark palette — inspired by Claude Design V1 handoff.
-// Primary = warm terracota on rich brown elevations.
-
 val AppDarkColorScheme = darkColorScheme(
     primary = Color(0xFFFFB59E),
     onPrimary = Color(0xFF4C2416),

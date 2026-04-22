@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,7 +54,10 @@ import io.github.feliperce.mavenkeeper.domain.model.PomDependency
 import io.github.feliperce.mavenkeeper.ui.components.EmptyState
 import io.github.feliperce.mavenkeeper.ui.components.ScopeBadge
 import io.github.feliperce.mavenkeeper.ui.components.formatBytes
+import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
+import androidx.compose.ui.tooling.preview.Preview
 import java.nio.file.Path
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -454,8 +458,8 @@ private fun DependencyRow(dependency: PomDependency) {
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US)
 
-fun formatRelative(instant: java.time.Instant): String {
-    val now = java.time.Instant.now()
+fun formatRelative(instant: Instant): String {
+    val now = Instant.now()
     val hours = ChronoUnit.HOURS.between(instant, now)
     val days = ChronoUnit.DAYS.between(instant, now)
     return when {
@@ -465,5 +469,56 @@ fun formatRelative(instant: java.time.Instant): String {
         days < 30 -> "${days / 7} sem atrás"
         days < 365 -> "${days / 30} mês atrás"
         else -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()).toLocalDate())
+    }
+}
+
+@Preview
+@Composable
+private fun ArtifactDetailPaneVersionsPreview() {
+    MavenKeeperTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ArtifactDetailPane(
+                state = LibraryPreviewSamples.uiState(),
+                onOpenInFileManager = {},
+                onDeleteRequest = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun ArtifactDetailPaneNoSelectionPreview() {
+    MavenKeeperTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ArtifactDetailPane(
+                state = LibraryPreviewSamples.uiState(selected = false),
+                onOpenInFileManager = {},
+                onDeleteRequest = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun ArtifactDetailPaneNoDepsPreview() {
+    MavenKeeperTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ArtifactDetailPane(
+                state = LibraryPreviewSamples.uiState(withDependencies = false),
+                onOpenInFileManager = {},
+                onDeleteRequest = {},
+            )
+        }
     }
 }

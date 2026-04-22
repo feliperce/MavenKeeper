@@ -48,6 +48,8 @@ import io.github.feliperce.mavenkeeper.ui.components.EmptyState
 import io.github.feliperce.mavenkeeper.ui.components.LoadingState
 import io.github.feliperce.mavenkeeper.ui.components.SearchField
 import io.github.feliperce.mavenkeeper.ui.components.formatBytes
+import io.github.feliperce.mavenkeeper.ui.theme.MavenKeeperTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun ArtifactListPane(
@@ -377,3 +379,46 @@ private fun TypeBadge(type: String) {
     )
 }
 
+@Preview
+@Composable
+private fun ArtifactListPanePreview() {
+    MavenKeeperTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ArtifactListPane(
+                state = LibraryPreviewSamples.uiState(),
+                onQueryChange = {},
+                onFilterChange = {},
+                onGroupClick = {},
+                onArtifactClick = {},
+                onRescan = {},
+                onPurgeSnapshots = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun ArtifactListPaneLoadingPreview() {
+    MavenKeeperTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ArtifactListPane(
+                state = LibraryPreviewSamples
+                    .uiState()
+                    .copy(allGroups = emptyList(), progress = ScanProgress.Scanning(128)),
+                onQueryChange = {},
+                onFilterChange = {},
+                onGroupClick = {},
+                onArtifactClick = {},
+                onRescan = {},
+                onPurgeSnapshots = {},
+            )
+        }
+    }
+}
