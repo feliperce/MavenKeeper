@@ -1,27 +1,102 @@
-This is a Kotlin Multiplatform project targeting Desktop (JVM).
+# MavenKeeper
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+A cross-platform desktop app to inspect and clean up your local Maven repository
+(`~/.m2/repository`). Built with Kotlin Multiplatform and Compose Desktop.
 
-### Build and Run Desktop (JVM) Application
+## Why
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+Local `.m2` folders grow silently: every plugin, every snapshot, every throwaway
+transitive version stays on disk forever. MavenKeeper scans the repository, groups
+artifacts by `groupId:artifactId`, and lets you see exactly what's taking up space —
+and remove it safely.
 
----
+## Features
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+- Scan the local Maven repository and aggregate artifacts by group.
+- Per-artifact detail pane with version list, total size, last-used time and license.
+- Installed versions and declared dependencies split into tabs.
+- Filters: **All**, **Recent**, **Largest**, **Snapshots**, **Stale**.
+- Reactive search by `groupId:artifactId` as you type.
+- Delete a specific version, or purge all `SNAPSHOT` versions at once (with
+  confirmation dialogs).
+- Open any artifact or version folder in the system file manager.
+- Custom repository path (for non-standard `.m2` locations).
+
+## Install
+
+Grab the installer for your OS from the
+[latest release](https://github.com/feliperce/MavenKeeper/releases/latest):
+
+| Platform | File |
+| --- | --- |
+| Linux (Debian/Ubuntu) | `mavenkeeper_<version>_amd64.deb` |
+| macOS | `MavenKeeper-<version>.dmg` |
+| Windows | `MavenKeeper-<version>.msi` |
+
+Each installer bundles its own JRE — no separate Java install required.
+
+## Build from source
+
+Requirements: **JDK 17 or newer**. The Gradle wrapper handles Gradle itself.
+
+```shell
+# Run the dev build
+./gradlew :composeApp:run
+
+# Build an installer for the current OS
+./gradlew :composeApp:packageDistributionForCurrentOS
+
+# Build a specific format (must run on matching OS)
+./gradlew :composeApp:packageDeb        # Linux, on Linux
+./gradlew :composeApp:packageDmg        # macOS, on macOS
+./gradlew :composeApp:packageMsi        # Windows, on Windows
+```
+
+On Windows, use `gradlew.bat` instead of `./gradlew`.
+
+Output installers land under `composeApp/build/compose/binaries/main/<format>/`.
+
+### Overriding the version
+
+Installers embed the version number in their metadata (Info.plist on macOS,
+Add/Remove Programs on Windows, `dpkg` on Linux). By default a local build uses
+`1.0.0`. Override with:
+
+```shell
+./gradlew :composeApp:packageDeb -PappVersion=1.2.3
+```
+
+## Tech stack
+
+- **Kotlin** 2.3.x
+- **Compose Multiplatform** 1.11.x (Material 3)
+- **Navigation Compose** multiplatform
+- **Kotlinx Coroutines** for async scanning
+- **Compose Resources** for i18n (default locale: English)
+- Distribution via `jpackage` (bundled with JDK 17+)
+
+## Project layout
+
+Single-target Kotlin Multiplatform project (JVM only today; the source-set
+layout leaves room for future targets).
+
+```
+composeApp/
+  src/jvmMain/kotlin/io/github/feliperce/mavenkeeper/
+    data/              # Repository scanning, POM parsing, file manager
+    di/                # AppContainer (manual DI)
+    domain/            # Models & repository interfaces
+    ui/
+      components/      # Reusable composables (EmptyState, dialogs, ...)
+      navigation/      # Destinations & NavHost
+      screens/
+        library/       # Main list + detail panes
+        settings/      # Repository path, about
+      theme/           # Color/Type/Shape + MavenKeeperTheme
+  src/jvmMain/composeResources/
+    values/strings.xml # UI text (English default)
+```
+
+## License
+
+[MIT](./LICENSE.md) © Felipe Celestino
