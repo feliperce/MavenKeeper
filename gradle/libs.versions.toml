@@ -8,6 +8,7 @@ kotlin = "2.3.20"
 kotlinx-coroutines = "1.11.0-rc01"
 kotlinx-serialization = "1.11.0"
 material3 = "1.11.0-alpha06"
+materialIconsExtended = "1.7.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -21,6 +22,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
