@@ -43,7 +43,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "MavenKeeper"
-            packageVersion = "1.0.0"
+            packageVersion = (findProperty("appVersion") as? String) ?: "1.0.0"
         }
     }
 }
